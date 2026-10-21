@@ -15,7 +15,7 @@
 ## 4.2 Requisitos Não Funcionais
 *(A preencher)*
 
-    **História 1**
+**História 1**
 Como desenvolvedora de software, quero utilizar blocos de código formatados em Markdown nas minhas notas, para manter a sintaxe legível e colorida quando for rever as minhas anotações.
 *   **Cenário de Teste 1 (Renderização de Código):**
     *   **Dado que** estou no editor principal do Memos.
