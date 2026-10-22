@@ -13,7 +13,20 @@
     *   **Evidência:** O *Pull Request* `#6334` documenta a implementação exata desta funcionalidade, descrevendo a lógica de empacotamento das anotações em formato Markdown e manifesto JSON num arquivo ZIP. Na interface, a funcionalidade é acedida no painel de "Configurações" (Settings).
 
 ## 4.2 Requisitos Não Funcionais
-*(A preencher)*
+
+* **RNF01: O sistema deve garantir a segurança e o controle de acesso às anotações, respeitando as permissões definidas e impedindo que usuários não autorizados visualizem ou modifiquem informações privadas.**
+  * **Evidência:** O Memos possui mecanismos de autenticação e diferentes níveis de visibilidade: `PRIVATE` (anotações privadas), `PROTECTED` (acessíveis a usuários autenticados), `PUBLIC` (anotações públicas) e `SPACE` (acessíveis aos membros autorizados de um espaço). Essas regras estão descritas na [documentação oficial de compartilhamento](https://usememos.com/docs/usage/sharing) e demonstram a existência de mecanismos de proteção das informações.
+
+* **RNF02: O sistema deve permitir sua implantação e execução em diferentes ambientes computacionais, garantindo portabilidade por meio de tecnologias de conteinerização.**
+  * **Evidência:** A [documentação oficial de implantação com Docker](https://usememos.com/docs/deploy/docker) apresenta imagens compatíveis com diferentes arquiteturas, incluindo `linux/amd64`, `linux/arm64` e `linux/arm/v7`. Essa característica permite executar o Memos em diferentes ambientes sem a necessidade de instalar manualmente todas as dependências da aplicação.
+
+* **RNF03: O sistema deve oferecer compatibilidade com diferentes sistemas gerenciadores de bancos de dados, permitindo flexibilidade na escolha da solução de armazenamento conforme o ambiente de implantação.**
+  * **Evidência:** A [documentação oficial do Memos](https://usememos.com/docs/deploy/docker#external-databases) apresenta suporte aos bancos de dados SQLite, MySQL e PostgreSQL. A configuração é realizada por meio das variáveis de ambiente `MEMOS_DRIVER` e `MEMOS_DSN`, permitindo selecionar o mecanismo de persistência utilizado pela aplicação.
+
+* **RNF04: O sistema deve favorecer a manutenibilidade e a qualidade do código por meio de testes automatizados, análise estática e verificações contínuas durante o desenvolvimento.**
+  * **Evidência:** O repositório oficial utiliza **GitHub Actions** para executar verificações automatizadas, incluindo testes do backend e frontend, análise estática, verificação de formatação, validação de tipos e build da aplicação. Essas práticas podem ser observadas nos [workflows do GitHub Actions](https://github.com/usememos/memos/actions) e na [documentação oficial de testes](https://usememos.com/docs/development/testing), contribuindo para identificar defeitos e reduzir riscos durante a evolução do software.
+
+## Histórias de Usuário
 
 **História 1**
 Como desenvolvedora de software, quero utilizar blocos de código formatados em Markdown nas minhas notas, para manter a sintaxe legível e colorida quando for rever as minhas anotações.
