@@ -1,28 +1,38 @@
 # 1. O que é o Memos?
-O Memos é um serviço open source e self-hosted focado na captura de notas rápidas, pensamentos e registos de conhecimento. O sistema apresenta uma interface em estilo "linha do tempo" (timeline), semelhante a um microblog privado, permitindo aos utilizadores guardar informações sem a necessidade de criar pastas complexas ou estruturar documentos extensos.
 
-## 1.1 Análise Geral do Sistema
-- **Problema que resolve:** A dificuldade de capturar informações, ideias soltas ou trechos de código rapidamente num local centralizado, privado e pesquisável, evitando a fragmentação de anotações em várias ferramentas ou ficheiros dispersos. O Memos elimina a fricção inicial de "onde guardar isto?" ao focar-se numa linha do tempo contínua.
-- **Público-alvo:** Indivíduos e equipes que procuram uma ferramenta leve e privada para registos diários (journaling), gestão de conhecimento pessoal (PKM) e organização de material de estudo ou trabalho.
-- **Principais utilizadores:** Estudantes universitários, engenheiros de software, investigadores, escritores e profissionais que lidam com um grande fluxo de informações fragmentadas.
-- **Principais funcionalidades:** 
-  * Suporte para formatação em Markdown. 
-  * Organização ágil através de tags (ex: #estudo, #codigo). 
-  * Filtros avançados e pesquisa integrada. 
-  * Possibilidade de partilha pública de notas específicas. 
-  * Suporte para anexos (imagens e ficheiros). 
-  * Integração via API (REST).
-- **Tecnologias utilizadas:** Go (backend), React / TypeScript (frontend) e SQLite (banco de dados). Utiliza Docker para facilitar a implementação.
-- **Licença:** Licença MIT.
-- **Versão analisada:** v0.31.0
+O Memos é um serviço open source e self-hosted para registrar notas rápidas, ideias e conhecimento. A interface funciona como uma linha do tempo (timeline), parecida com um microblog privado: o usuário escreve e salva sem precisar criar pastas ou estruturar documentos longos.
+
+> **Versão analisada:** tag [`v0.31.0`](https://github.com/usememos/memos/releases/tag/v0.31.0), publicada em 20/09/2026.
+> Depois dela o projeto adotou versionamento por calendário (`26.10.0`, `26.11.0`; PR #6362). Todas as evidências e diagramas deste trabalho se referem à `v0.31.0`.
+
+## 1.1 Análise geral do sistema
+
+- **Problema que resolve:** a dificuldade de capturar informações, ideias soltas ou trechos de código rapidamente, num lugar centralizado, privado e pesquisável, evitando que as anotações fiquem espalhadas em várias ferramentas e arquivos. A linha do tempo contínua elimina a dúvida inicial de "onde guardo isto?".
+- **Público-alvo:** pessoas e equipes que querem uma ferramenta leve e privada para registros diários (journaling), gestão de conhecimento pessoal (PKM) e organização de material de estudo ou trabalho.
+- **Principais usuários:** quem lida com muitas informações fragmentadas no dia a dia, como estudantes, desenvolvedores e profissionais de TI. Como o Memos é self-hosted, o usuário inicial costuma ter perfil técnico (precisa instalar via Docker ou binário).
+  > **[A FAZER]** Sustentar com evidência real: citar 2–3 issues ou discussões do GitHub em que usuários descrevem como usam o Memos (links).
+- **Principais funcionalidades:**
+  - Escrita em Markdown, com editor baseado em CodeMirror (`web/src/components/MemoEditor/`).
+  - Organização por tags escritas no próprio texto (ex.: `#estudo`), extraídas automaticamente (`markdown/extensions/tag.go`).
+  - Filtros e busca (filtro `tags` em `proto/api/v1/memo_service.proto`).
+  - Níveis de visibilidade: `PRIVATE`, `PROTECTED`, `PUBLIC` e `SPACE`.
+  - Anexos (imagens e arquivos), com armazenamento local ou compatível com S3.
+  - Exportação e importação de memos em ZIP (PR #6334).
+  - API definida em Protocol Buffers, exposta via Connect RPC e REST (gRPC-Gateway).
+- **Tecnologias utilizadas:** Go (backend), React + TypeScript (frontend), Protocol Buffers (contratos da API), SQLite como banco padrão, com suporte também a MySQL e PostgreSQL (`store/db/`). Distribuído como imagem Docker.
+- **Licença:** MIT (arquivo `LICENSE`).
+- **Versão analisada:** `v0.31.0`.
 
 ## 1.2 Personas e Jobs to Be Done (JTBD)
-Para compreender melhor o impacto e o uso do Memos, definimos duas personas principais:
 
-### Persona 1: O Estudante de Engenharia de Software
-- **Perfil:** Estudante universitário (como nós) que está a aprender várias disciplinas complexas ao mesmo tempo. Ele lida frequentemente com blocos de código (ex: PHP ou C) e precisa de anotar explicações sobre erros ou soluções de arquitetura que encontra durante o desenvolvimento de projetos práticos.
-- **Job to Be Done (JTBD):** "Quando estou a depurar o meu código e encontro a solução para um erro, quero guardar esse fragmento de código rapidamente numa nota com a tag da linguagem, para que eu possa pesquisar e reutilizar essa lógica futuramente sem perder o ritmo de trabalho."
+### Persona 1: Estudante de Engenharia de Software
+- **Perfil:** estudante universitário que cursa várias disciplinas ao mesmo tempo. Trabalha com trechos de código (ex.: PHP ou C) e precisa anotar explicações de erros e soluções encontradas durante os projetos práticos.
+- **JTBD:** "Quando estou depurando meu código e encontro a solução de um erro, quero salvar esse trecho rapidamente numa nota com a tag da linguagem, para poder pesquisar e reutilizar essa solução depois sem perder o ritmo de trabalho."
+- **Evidência:** suporte a blocos de código com destaque de sintaxe (`web/src/components/MemoContent/highlight.ts`, usando `highlight.js`).
+  > **[A FAZER]** Link de uma issue real sobre blocos de código / destaque de sintaxe.
 
-### Persona 2: O Profissional de Suporte Técnico de TI
-- **Perfil:** Trabalho em uma empresa resolvendo chamados de clientes. Durante o dia, ele precisa de documentar procedimentos repetitivos e comandos úteis para não os esquecer.
-- **Job to Be Done (JTBD):** "Quando descubro uma nova forma de resolver um chamado frequente dos clientes, quero registar esse procedimento na minha linha do tempo com tags de classificação, para construir a minha própria base de conhecimento sem depender de sistemas complexos."
+### Persona 2: Profissional de suporte técnico de TI
+- **Perfil:** trabalha numa empresa atendendo chamados de clientes. Precisa documentar procedimentos repetitivos e comandos úteis para não esquecê-los.
+- **JTBD:** "Quando descubro uma nova forma de resolver um chamado frequente, quero registrar esse procedimento na minha linha do tempo com tags de classificação, para construir minha própria base de conhecimento sem depender de sistemas complexos."
+- **Evidência:** tags extraídas do texto e filtro por tag; visibilidade `SPACE` permite compartilhar com a equipe.
+  > **[A FAZER]** Link de uma issue real sobre uso como base de conhecimento / compartilhamento com equipe.
