@@ -1,237 +1,210 @@
 # Análise da Evolução e do Processo de Desenvolvimento do Memos
 
-## 1. Histórico e Evolução do Projeto
+> Todas as evidências se referem ao repositório [usememos/memos](https://github.com/usememos/memos), analisado na tag `v0.31.0`. Os hashes de commit podem ser conferidos com `git show <hash>`.
 
-O Memos apresenta uma evolução incremental, com mudanças registradas publicamente por meio de commits, issues, pull requests e releases.
+## 1. Histórico e evolução do projeto
 
-Ao analisar o histórico do projeto, destacam-se quatro acontecimentos importantes que demonstram sua evolução técnica e funcional.
+O Memos evoluiu de forma incremental, com mudanças registradas publicamente em commits, issues, pull requests e releases. Destacamos seis acontecimentos.
 
-### 1.1. Criação do Produto Mínimo — Dezembro de 2021
+### 1.1 Criação do produto mínimo — dezembro de 2021
 
-O primeiro commit do projeto, realizado em 8 de dezembro de 2021, já apresentava elementos fundamentais, como:
+O primeiro commit (`2f72bfa`, 08/12/2021, "init project") já continha:
 
-- Gerenciamento de usuários;
-- Autenticação;
-- Criação e gerenciamento de memos;
-- Persistência de dados utilizando SQLite.
+- gerenciamento de usuários (`api/user.go`, `store/user.go`);
+- autenticação (`api/auth.go`);
+- criação e gerenciamento de memos (`api/memo.go`, `store/memo.go`);
+- persistência em SQLite (`store/sqlite.go`, `resources/sqlite.sql`).
 
-Poucos dias depois, o projeto recebeu uma **interface web** e um **Dockerfile**, permitindo sua utilização e implantação de maneira mais simples.
-
----
-
-### 1.2. Remoção da API Legada — Abril e Maio de 2024
-
-Em abril de 2024, foi removida a API antiga do projeto.
-
-Posteriormente, a versão baseada em Protocol Buffers, Connect RPC e gRPC-Gateway foi consolidada como a API principal. Essa mudança foi publicada na release `v0.22.0`, em maio de 2024.
-
-#### Principais consequências
-
-- Redução da duplicação entre APIs;
-- Centralização dos contratos em Protocol Buffers;
-- Facilidade na geração de clientes;
-- Simplificação da arquitetura interna;
-- Necessidade de adaptação das integrações que utilizavam a API antiga.
+No mesmo dia o frontend foi adicionado (`06bffd0`, "migrate frontend") e, quatro dias depois, um Dockerfile (`f70ad68`, 12/12/2021), facilitando a implantação.
 
 ---
 
-### 1.3. Reconstrução do Editor e Integração MCP — Junho e Julho de 2026
+### 1.2 Remoção da API legada (2024) e migração para Connect RPC (2025)
 
-O commit `5a73d7d`, realizado em 28 de junho de 2026, reconstruiu o editor utilizando CodeMirror 6.
+São dois momentos diferentes da evolução da API:
 
-O novo editor passou a trabalhar com uma abordagem de *fonte decorada*, na qual o Markdown continua visível, enquanto títulos, tags, links e menções recebem comportamentos e estilos durante a edição.
+1. **Abril/maio de 2024:** a API antiga foi retirada (`755d5b8`, 12/04/2024, "retire legacy setting api"; `bbd206e`, 13/04/2024, "retire legacy api"). A API baseada em Protocol Buffers passou a ser a única, e a mudança foi publicada na release `v0.22.0` (18/05/2024).
+2. **Dezembro de 2025:** a comunicação foi migrada para **Connect RPC** (PR #5338, `edd3ced`, 11/12/2025), mantendo a exposição REST via gRPC-Gateway.
 
-Além disso, a release `v0.30.0`, publicada em julho de 2026, introduziu uma integração **MCP**, derivada da especificação OpenAPI do projeto.
+**Consequências:**
 
-#### Principais contribuições
-
-- **Evolução perfectiva:** melhoria da experiência de escrita;
-- **Reuso de software:** aproveitamento da API existente;
-- **Integração:** ampliação da capacidade de integração programática;
-- **Modernização:** substituição de um subsistema central sem abandonar o formato Markdown.
-
----
-
-### 1.4. Spaces, Colaboração e Portabilidade — Agosto e Setembro de 2026
-
-O pull request `#6228` introduziu o suporte a múltiplos Spaces.
-
-#### Funcionalidades adicionadas
-
-- Criação de Spaces;
-- Participação de diferentes membros;
-- Definição de papéis de administrador e usuário;
-- Visibilidade `SPACE`;
-- Regras de autorização específicas;
-- Migrações para SQLite, MySQL e PostgreSQL.
-
-Posteriormente, o pull request `#6334` implementou a funcionalidade de **exportação e importação de memos por meio de arquivos ZIP**.
-
-O formato de exportação inclui:
-
-- Conteúdo em Markdown;
-- Manifesto JSON;
-- Anexos associados aos memos.
+- fim da duplicação entre duas APIs;
+- contratos centralizados em Protocol Buffers (`proto/api/v1/`);
+- geração automática de código de cliente e servidor;
+- integrações que usavam a API antiga precisaram ser adaptadas (mudança incompatível).
 
 ---
 
-## 2. Processo de Desenvolvimento e Práticas de Engenharia de Software
+### 1.3 MCP: criação, remoção e recriação a partir do OpenAPI — fevereiro a julho de 2026
 
-O **Memos** é desenvolvido publicamente no GitHub, seguindo um fluxo incremental baseado em:
+A integração com MCP (Model Context Protocol), que permite que assistentes de IA acessem o Memos, passou por retrabalho:
 
-1. Issues;
-2. Branches;
-3. Commits;
-4. Pull requests;
-5. Revisão de código;
-6. Integração contínua.
+| Data | Acontecimento | Evidência |
+|------|---------------|-----------|
+| 24/02/2026 | Primeiro servidor MCP, com autenticação por token pessoal (PAT) | `47d9414` |
+| 05/06/2026 | Esse servidor MCP é removido | `2a4638b` |
+| 09/06/2026 | Novo MCP gerado a partir da especificação OpenAPI da API | PR #6026 (`777d227`) |
+| 26/07/2026 | A nova integração chega a uma release | `v0.30.0` |
 
+Em vez de manter um servidor MCP escrito à mão, o projeto passou a **reutilizar o contrato da API** já existente (OpenAPI) para gerar as ferramentas MCP. Isso reduz duplicação e mantém o MCP sincronizado com a API.
 
-### 2.1. Issues Estruturadas
+---
 
-O projeto possui modelos diferentes para o registro de **defeitos** e **solicitações de funcionalidades**.
+### 1.4 Reconstrução do editor — junho de 2026
 
-Os formulários solicitam informações como:
+O commit `5a73d7d` (28/06/2026, "rebuild the editor on CodeMirror as decorated source") reconstruiu o editor sobre o CodeMirror 6 (dependências `@codemirror/*` em `web/package.json`).
 
-- Problema observado;
-- Comportamento esperado;
-- Passos para reprodução;
-- Versão utilizada;
-- Motivação da solicitação.
+O editor passou a usar *fonte decorada*: o Markdown continua visível, mas títulos, tags, links e menções recebem estilo e comportamento durante a edição.
 
-Essa organização melhora a compreensão das necessidades antes da implementação.
+- **Evolução perfectiva:** melhora a experiência de escrita;
+- **Reuso:** usa uma biblioteca de editor consolidada em vez de código próprio;
+- **Modernização:** troca um subsistema central sem abandonar o formato Markdown.
 
-### 2.2. Pull Requests Revisáveis
+---
 
-As mudanças são apresentadas por meio de **pull requests**, com escopo identificável.
+### 1.5 Spaces, colaboração e portabilidade — agosto e setembro de 2026
 
-Funcionalidades maiores, como MCP, Spaces e exportação de dados, foram discutidas e revisadas antes da integração.
+O PR #6228 (`6da8461`, 23/08/2026) introduziu múltiplos **Spaces**:
 
-Essa prática proporciona **rastreabilidade** entre o problema identificado, a implementação, os testes e a revisão do código.
+- criação de Spaces e participação de membros;
+- papéis de administrador e usuário;
+- visibilidade `SPACE`, com regras de autorização próprias (`core/access/memo.go`);
+- migrações para SQLite, MySQL e PostgreSQL.
 
-### 2.3. Integração Contínua
+O design foi documentado antes em `docs/design/multi-spaces.md`.
 
-O projeto utiliza **GitHub Actions** para automatizar diferentes etapas de verificação da qualidade do software.
+Em seguida, o PR #6334 (`019ca26`, 16/09/2026) implementou **exportação e importação de memos em ZIP**, com conteúdo em Markdown, manifesto JSON e anexos (formato descrito em `docs/design/memos-export-format.md`).
 
-Os workflows executam:
+---
 
-- Testes do backend e do frontend;
-- Análise estática de código;
-- Verificação de formatação;
-- Verificação de tipos;
-- Build da aplicação;
-- Validação de Protocol Buffers;
-- Testes de migração;
-- Verificações com diferentes bancos de dados.
+### 1.6 Mudança no processo de release — setembro de 2026
 
-Essas verificações fornecem feedback automatizado antes da integração das alterações.
+Logo após a `v0.31.0`, o PR #6362 (`fa12d84`, 22/09/2026) trocou o versionamento semântico `v0.x` por **versionamento por calendário** (`26.10.0`, `26.11.0`), removeu o Release Please e reiniciou a base de migrações do banco. O workflow `.github/workflows/release.yml` passou a aceitar apenas tags no novo formato.
 
-### 2.4. Commits Convencionais
+Esse acontecimento mostra que o **processo** também evolui, e não só o produto.
 
-As mensagens de commit utilizam prefixos padronizados, como:
+---
+
+## 2. Processo de desenvolvimento e práticas observadas
+
+O Memos é desenvolvido publicamente no GitHub, com issues, branches, commits, pull requests e integração contínua. Abaixo, as práticas observadas, com evidência e com os limites de cada uma.
+
+### 2.1 Issues estruturadas
+
+Há formulários distintos para defeitos e para novas funcionalidades (`.github/ISSUE_TEMPLATE/bug_report.yml` e `feature_request.yml`). Eles pedem problema observado, comportamento esperado, passos para reproduzir, versão utilizada e motivação.
+
+Além disso, o workflow `.github/workflows/stale.yml` marca como inativas as issues e PRs sem atividade por 30 dias e as fecha após mais 7. Isso mantém a lista de issues enxuta, mas também pode fechar pedidos legítimos que ninguém respondeu.
+
+### 2.2 Pull requests e revisão
+
+Funcionalidades grandes (MCP, Spaces, exportação) entraram por pull request, o que dá rastreabilidade entre problema, implementação e testes. O arquivo `CODEOWNERS` atribui todo o repositório ao grupo `@usememos/moderators`.
+
+**Limites observados:**
+
+- Nos últimos 12 meses (nov/2025 a nov/2026) houve cerca de 1.015 commits, dos quais só cerca de 360 referenciam um PR na mensagem. A maior parte das mudanças vai direto para a branch principal.
+- A autoria é concentrada em poucas contas, o que indica um projeto mantido por um núcleo pequeno.
+
+**Como é a revisão na prática.** Verificamos as páginas dos dois PRs mais importantes do período:
+
+| PR | Aberto por | Revisores listados | Mesclado por |
+|----|-----------|--------------------|--------------|
+| [#6228](https://github.com/usememos/memos/pull/6228) (Spaces) | `bluedbird` | `coderabbitai[bot]` (comentou) e `johnnyjoygh` (revisão solicitada, ainda pendente) | `boojack`, em 23/08 |
+| [#6334](https://github.com/usememos/memos/pull/6334) (exportação) | `bluedbird` | `coderabbitai[bot]` (comentou) e `johnnyjoygh` (revisão solicitada, ainda pendente) | `boojack`, em 16/09 |
+
+Ou seja: nos dois casos a única revisão registrada foi a de uma **ferramenta automática de revisão por IA** (CodeRabbit). O revisor humano foi indicado, mas a revisão aparece como pendente, e o PR foi mesclado por um mantenedor mesmo assim. O projeto tem a prática de revisão **formalmente**, mas na prática ela depende muito de automação e da confiança entre poucos mantenedores. Em compensação, as descrições dos PRs são detalhadas: o #6228, por exemplo, tem seções de resumo, limites de design (*Design boundaries*) e verificação.
+
+### 2.3 Integração contínua
+
+O projeto usa GitHub Actions (`.github/workflows/`):
+
+| Workflow | O que verifica |
+|----------|----------------|
+| `backend-tests.yml` | `go mod tidy`, `golangci-lint` (análise estática) e testes Go divididos em grupos; os testes de `store` rodam em SQLite, MySQL e PostgreSQL |
+| `frontend-tests.yml` | `pnpm lint`, `pnpm test` e `pnpm build` |
+| `proto-linter.yml` | validação dos arquivos Protocol Buffers |
+| `upgrade-smoke.yml` | instalação limpa e atualização a partir da versão estável anterior |
+
+Na `v0.31.0` existem 187 arquivos de teste Go (`*_test.go`).
+
+### 2.4 Commits convencionais
+
+As mensagens usam prefixos padronizados, o que facilita ler o histórico e gerar notas de versão:
 
 | Prefixo | Finalidade |
 |---------|------------|
-| `feat` | Adição de funcionalidades |
-| `fix` | Correção de defeitos |
-| `refactor` | Refatoração de código |
-| `test` | Adição ou alteração de testes |
-| `docs` | Atualização da documentação |
-| `chore` | Tarefas de manutenção |
+| `feat` | nova funcionalidade |
+| `fix` | correção de defeito |
+| `refactor` | refatoração |
+| `test` | testes |
+| `docs` | documentação |
+| `chore` | manutenção |
 
-Essa padronização facilita a leitura do histórico e contribui para a geração automática das notas de versão.
+### 2.5 Releases automatizadas
 
-### 2.5. Releases Automatizadas
+Entre abril/2026 (PR #5842) e a `v0.31.0`, o projeto usou o **Release Please** para preparar versões e atualizar changelogs a partir dos commits convencionais. Depois da `v0.31.0` a ferramenta foi removida no PR #6362, junto com a adoção do versionamento por calendário (ver 1.6).
 
-O projeto utiliza **Release Please** para automatizar parte do processo de lançamento de novas versões.
+### 2.6 Documentos de design
 
-A ferramenta auxilia em:
+O projeto não usa ADRs no formato clássico, mas mantém **documentos de design** em `docs/design/` (por exemplo `multi-spaces.md`, `memos-export-format.md`, `api-abuse-controls.md`). Eles registram objetivo, decisões e consequências; `multi-spaces.md`, por exemplo, tem as seções *Non-goals* e *Alternatives considered*. Isso mostra que mudanças grandes são planejadas antes de implementadas.
 
-- Preparação de versões;
-- Atualização de changelogs;
-- Organização de funcionalidades;
-- Registro de correções;
-- Documentação de melhorias de desempenho.
+### 2.7 Testes de migração
 
-### 2.6. Decisões Arquiteturais Documentadas
-
-O repositório contém **ADRs (Architecture Decision Records)** e documentos de design que registram decisões relacionadas à arquitetura do sistema.
-
-Esses documentos apresentam:
-
-- Contexto da decisão;
-- Objetivos;
-- Alternativas consideradas;
-- Decisões adotadas;
-- Consequências;
-- Elementos fora do escopo.
-
-Essa documentação facilita a compreensão das escolhas técnicas ao longo do desenvolvimento.
-
-### 2.7. Testes de Migração
-
-Como o Memos oferece suporte a **SQLite, MySQL e PostgreSQL**, mudanças relacionadas à persistência de dados são acompanhadas por migrações e verificações específicas.
-
-Essa prática contribui para reduzir riscos de perda de informações, inconsistências e incompatibilidades entre versões.
+Como o Memos suporta SQLite, MySQL e PostgreSQL (`store/db/sqlite`, `store/db/mysql`, `store/db/postgres`), mudanças no banco vêm acompanhadas de migrações para os três, e o workflow `upgrade-smoke.yml` testa a atualização entre versões. Isso reduz o risco de perda de dados ao atualizar.
 
 ---
 
-## 3. Relação com os Conceitos de Processos de Software
+## 3. Relação com os processos de software estudados
 
-As práticas observadas no desenvolvimento do Memos apresentam uma forte relação com conceitos estudados em Engenharia de Software, especialmente:
+O Memos não segue integralmente nenhum modelo. Ele combina práticas de alguns e claramente não adota outros.
 
-- Desenvolvimento incremental;
-- Extreme Programming (XP);
-- Reuso de software.
+### 3.1 Desenvolvimento incremental (presente)
 
-### 3.1. Desenvolvimento Incremental
+O sistema não foi construído de uma vez. O histórico mostra entregas sucessivas, cada uma utilizável:
 
-O Memos não foi construído como um produto completo em uma única etapa.
+1. autenticação, memos e persistência em SQLite (2021);
+2. interface web e Docker (2021);
+3. API única em Protocol Buffers (2024) e Connect RPC (2025);
+4. MCP (2026);
+5. novo editor (2026);
+6. Spaces e exportação/importação (2026).
 
-Seu histórico apresenta entregas sucessivas, como:
+Cada release acrescenta funcionalidade sobre a anterior, o que é a ideia central do desenvolvimento incremental.
 
-1. Autenticação e persistência com SQLite;
-2. Interface web e suporte a Docker;
-3. Modernização da API;
-4. Reconstrução do editor;
-5. Integração MCP;
-6. Implementação de Spaces;
-7. Exportação e importação de dados.
+### 3.2 Extreme Programming — XP (parcial)
 
-Cada entrega acrescenta funcionalidades ou melhorias ao sistema, agregando valor real e utilizável ao produto.
+Práticas de XP **presentes**:
 
+- **Integração contínua:** cada push e PR passa pelos workflows da seção 2.3.
+- **Testes automatizados:** 187 arquivos de teste Go, mais testes do frontend.
+- **Refatoração:** commits `refactor:` frequentes, como `5a73d7d` (editor) e a migração para Connect RPC.
 
-### 3.2. Extreme Programming (XP)
+Práticas de XP **ausentes ou contrariadas**:
 
-O projeto apresenta práticas características da metodologia **XP (Extreme Programming)**, entre elas:
+- **Pequenas entregas:** o PR #6228 (Spaces) alterou 187 arquivos (+17.369 / −2.385 linhas) e o #6334 alterou 43 arquivos (+6.507 / −721). São entregas grandes, não pequenas.
+- **Programação em par** e **cliente presente:** não há evidência no repositório.
+- **TDD:** existem muitos testes, mas não é possível afirmar pelo histórico que eles foram escritos antes do código.
 
-- **Integração contínua:** alterações são verificadas frequentemente;
-- **Testes automatizados:** contribuem para identificar problemas e preservar a qualidade;
-- **Refatoração:** permite melhorar a estrutura do código;
-- **Mudanças pequenas:** facilitam a revisão e a integração;
-- **Feedback rápido:** possibilita identificar e corrigir problemas durante o desenvolvimento.
+Portanto, o projeto adota **algumas práticas técnicas** do XP, sem seguir o XP como processo.
 
-Essas práticas contribuem para a melhoria contínua do código, a qualidade do software e a adaptação rápida às mudanças.
+### 3.3 Reuso de software (presente)
 
-Dessa forma, o projeto apresenta características importantes de XP, aplicando princípios que tornam o desenvolvimento mais ágil, eficiente e colaborativo.
+O Memos se apoia em componentes existentes em vez de reimplementá-los:
 
-### 3.3. Reuso de Software
+| Componente reutilizado | Uso | Evidência |
+|------------------------|-----|-----------|
+| React | interface web | `web/package.json` |
+| CodeMirror 6 | editor | `@codemirror/*` em `web/package.json` |
+| highlight.js | destaque de código | `web/src/components/MemoContent/highlight.ts` |
+| Echo | servidor HTTP | `github.com/labstack/echo/v5` em `go.mod` |
+| Connect RPC e gRPC-Gateway | API RPC e REST | `go.mod` |
+| Protocol Buffers | contratos da API | `proto/api/v1/` |
+| AWS SDK (S3) | armazenamento de anexos | `go.mod` |
+| Especificação OpenAPI | geração das ferramentas MCP | PR #6026 |
 
-O Memos utiliza diferentes tecnologias, bibliotecas e componentes existentes para construir suas funcionalidades.
+O caso do MCP (seção 1.3) é o exemplo mais claro: o projeto descartou uma implementação própria e passou a reutilizar o contrato da API.
 
-#### Tecnologias reutilizadas
+### 3.4 Modelos que o projeto não segue
 
-| Tecnologia | Aplicação |
-|------------|-----------|
-| React | Desenvolvimento da interface |
-| CodeMirror | Implementação do editor |
-| Echo | Desenvolvimento do backend |
-| Connect RPC | Comunicação entre serviços |
-| Protocol Buffers | Definição de contratos |
-| Drivers de banco de dados | Integração com bancos de dados |
-| SDK compatível com S3 | Integração com armazenamento de objetos |
-| OpenAPI | Especificação e integração de APIs |
-| Componentes internos | Reaproveitamento de funcionalidades |
-
-O reuso dessas tecnologias reduz o esforço necessário para implementar funcionalidades já disponíveis em soluções consolidadas.
-
+- **Scrum:** não há sprints, backlog priorizado público, Product Owner nem Scrum Master visíveis. As entregas são contínuas, não em ciclos fixos.
+- **Modelo Spotify:** não há squads, tribos ou guildas. O núcleo de mantenedores é pequeno.
+- **Cascata:** não há fases sequenciais. Requisitos, implementação e testes acontecem juntos a cada funcionalidade, embora os documentos de design (2.6) tragam um planejamento prévio para mudanças grandes.
