@@ -65,6 +65,7 @@ Permitir que o autor de um memo defina uma data e hora até a qual o memo fica *
 2. **Filtro na listagem:** memos com `hide_until` no futuro não aparecem na linha do tempo; quando a data passa, voltam a aparecer.
 3. **Controle no editor:** botão para escolher a data de adiamento e para remover o adiamento.
 4. **Testes automatizados** do filtro: memo adiado não aparece; memo com data já vencida aparece; memo sem adiamento aparece.
+5. **Página "Adiados":** lista só os memos do próprio usuário que ainda estão adiados, para que ele consiga encontrá-los e cancelar o adiamento. Foi incluída durante a implementação (ver "Ajuste do MVP durante a implementação").
 
 ### Valor entregue
 
@@ -78,7 +79,6 @@ O usuário consegue registrar algo agora e só voltar a vê-lo na data escolhida
 | Data de vencimento (*due date*) separada da data de adiamento | A issue #6388 pede as duas, mas o adiamento sozinho já resolve o problema principal. |
 | Atalhos de antecedência ("1 dia antes", "1 semana antes") | Melhoria de usabilidade que depende da data de vencimento. |
 | Adiamentos recorrentes (toda semana, todo mês) | Aumenta muito a complexidade das regras. |
-| Página para ver só os memos adiados | Útil, mas o usuário ainda consegue achar o memo pela busca ou pelo link. |
 
 ### Justificativa das escolhas
 
@@ -86,6 +86,14 @@ O usuário consegue registrar algo agora e só voltar a vê-lo na data escolhida
 - Fazer a volta do memo **na hora da consulta**, em vez de com uma tarefa agendada, evita criar um processo em segundo plano e elimina o risco de o memo "não voltar" se o servidor estiver desligado na data.
 - Guardar a data dentro do `payload` do memo, que é um campo JSON já existente, evita migrações nos três bancos suportados (SQLite, MySQL e PostgreSQL).
 - Notificações ficaram de fora porque já existe uma alternativa externa (memos-reminder) e porque elas dependeriam de configuração de SMTP pelo administrador.
+
+### Ajuste do MVP durante a implementação
+
+Na proposta, a página de memos adiados ficou fora do MVP porque acreditávamos que o usuário ainda encontraria o memo pela busca. Ao implementar, verificamos que a busca e a página de Arquivados usam a mesma listagem da linha do tempo (`ListMemos`). Assim, um memo adiado sumia também da busca e dos Arquivados: se o usuário se arrependesse, não conseguia encontrá-lo para cancelar o adiamento.
+
+Por isso, a página "Adiados" passou a fazer parte do MVP. Ela usa uma nova opção da listagem (`hidden_only`), que traz só os memos do próprio usuário com data de adiamento ainda no futuro.
+
+Também houve uma diferença em relação à análise de impacto (6.3): em vez de criar um campo filtrável em `filter/schema.go`, a regra foi implementada como uma opção da busca no banco (`FindMemo.ExcludeFutureHidden` e `FindMemo.OnlyFutureHidden`), aplicada nos três bancos antes da paginação. O resultado é o mesmo, com menos código.
 
 ---
 
@@ -104,6 +112,8 @@ O usuário consegue registrar algo agora e só voltar a vê-lo na data escolhida
 | **Controle de acesso** | `core/access/memo.go` | Nenhuma mudança | Nenhum. Adiar não muda quem pode ler o memo. |
 | **Interface: editor** | `web/src/components/MemoEditor/Toolbar/` (novo componente ao lado de `VisibilitySelector.tsx`) | Botão com seletor de data | Médio. |
 | **Interface: exibição** | `web/src/components/MemoView/` | Indicar que um memo está adiado (quando aberto pelo link) | Baixo. |
+| **API: listagem só de adiados** | `ListMemosRequest.hidden_only`, `ListMemos`, `store/db/{sqlite,mysql,postgres}/memo.go` | Nova opção que traz só os memos adiados do próprio usuário (incluída durante a implementação) | Médio. |
+| **Interface: página "Adiados"** | `web/src/pages/Postponed.tsx`, `web/src/router/`, `web/src/components/UserMenu.tsx`, `PagedMemoList` | Nova página e item no menu do usuário, no mesmo formato da página de Arquivados | Médio. |
 | **MCP** | `server/mcp/` | Nenhuma mudança manual | Baixo. As ferramentas MCP são geradas do `openapi.yaml` (PR #6026), então o novo campo é exposto automaticamente. |
 | **Exportação** | `core/memoexport/`, `docs/design/memos-export-format.md` | Decidir se `hide_until` entra no manifesto do ZIP | Médio. Se ficar de fora, um memo adiado volta visível ao ser importado. |
 | **Testes** | `filter/engine_test.go`, `server/test/`, `store/test/` | Testes do novo filtro e do comportamento da listagem nos três bancos | Médio. |
